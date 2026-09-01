@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Stellar Bastion · 星轨要塞</title>
+</head>
+<body>
+  <div id="game-root">
+
+    <!-- ========== 主菜单 ========== -->
+    <section id="screen-menu" class="screen">
+      <div class="stars-bg"></div>
+      <div class="menu-wrap">
+        <header class="menu-head">
+          <h1 class="brand">
+            <span class="brand-mark">◆</span>
+            <span class="brand-name">Stellar Bastion</span>
+            <span class="brand-sub">星轨要塞</span>
+          </h1>
+          <p class="brand-tag">三关塔防 · 漏怪扣血 · 配件闯关</p>
+        </header>
+        <div class="menu-actions">
+          <button id="btn-play" class="btn btn-primary">▶ 开始游戏</button>
+          <button id="btn-howto" class="btn btn-ghost">📖 玩法说明</button>
+        </div>
+        <aside class="leaderboard-panel">
+          <div class="lb-head"><h2>全国排行榜</h2></div>
+          <ol class="lb-list" id="lb-list">
+            <li class="lb-empty">排行榜加载中…</li>
+          </ol>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ========== 玩法说明 ========== -->
+    <section id="screen-howto" class="screen hidden">
+      <div class="panel">
+        <button class="panel-close" data-close="howto">✕</button>
+        <h2>玩法说明</h2>
+        <div class="howto-body">
+          <p><strong>生命</strong>：你有 8 点生命（最多 10），每个漏网的怪物扣 1 点。</p>
+          <p><strong>金币</strong>：击杀怪物会掉落金币；用金币在波次间隙购买/刷新配件。</p>
+          <p><strong>三关</strong>：入门要塞（4 槽 / 8 波）/ 中级要塞（5 槽 / 12 波）/ 终极要塞（6 槽 / 16 波）。</p>
+          <p><strong>配件稀有度</strong>：每次刷新 3 个槽位独立掷骰：
+            <span style="color:#d8def0">白 58%</span> ·
+            <span style="color:#ffd76b">黄 28%</span> ·
+            <span style="color:#ff5577">红 9%</span> ·
+            <span style="color:#b48bff">黑 3%</span> ·
+            <span style="color:#66ffb8">特殊 2%</span></p>
+          <p><strong>攻击三类</strong>：散射（多发齐射）、强化（单发高伤/穿透）、急速（高速连射）。</p>
+          <p><strong>防御三类</strong>：减速（范围减速）、陷阱（一次性爆破）、护盾（替玩家挡漏怪）。</p>
+          <p><strong>特殊类</strong>：加血、免费刷新、金币奖励、时间冻结、复活。</p>
+          <p><strong>底部按钮</strong>：看广告 +100 金币（30s 冷却） / 刷新配件 30 金币 / 重新开始当前关卡。</p>
+          <p><strong>排名</strong>：通关数（1~3）决定段位；分数由通关数×1000 + 累计波数×10 + 剩余金币 决定。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 关卡选择 ========== -->
+    <section id="screen-stages" class="screen hidden">
+      <div class="panel wide">
+        <button class="panel-close" data-close="stages">✕</button>
+        <h2>选择要塞</h2>
+        <div class="stage-grid" id="stage-grid"></div>
+      </div>
+    </section>
+
+    <!-- ========== 战场 ========== -->
+    <section id="screen-game" class="screen hidden">
+      <div class="game-frame">
+
+        <!-- 顶部状态栏 -->
+        <div class="game-topbar">
+          <div class="hp-bar">
+            <div class="hp-hearts" id="hp-hearts"></div>
+            <div class="hp-text" id="hp-text">8/8</div>
+          </div>
+          <div class="stat">
+            <span class="stat-label">COIN</span>
+            <span class="stat-value" id="top-coin" style="color:var(--gold)">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">WAVE</span>
+            <span class="stat-value" id="top-wave">0/0</span>
+          </div>
+          <button id="game-home" class="icon-btn" title="返回主页">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 11.5L12 3l9 8.5V21h-6v-6H9v6H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <!-- 战场画布 -->
+        <div class="battle-wrap" id="battle-wrap">
+          <canvas id="battle" width="960" height="540"></canvas>
+          <div id="stage-banner" class="stage-banner hidden"></div>
+          <div id="boss-warn" class="boss-warn hidden">⚠ BOSS 来袭 ⚠</div>
+
+          <!-- 商店覆盖层 -->
+          <div id="shop-overlay" class="shop-overlay hidden">
+            <div class="shop-head">
+              <h3 id="shop-title">波次间隙 · 选择配件</h3>
+              <div class="shop-info">
+                <span>金币 <b id="shop-coin">0</b></span>
+                <span>下一波 <b id="shop-next-wave">?</b></span>
+                <span>已用刷 <b id="shop-reroll">0</b></span>
+              </div>
+            </div>
+            <div class="shop-cards" id="shop-cards"></div>
+            <div class="shop-actions">
+              <button id="btn-reroll" class="btn btn-ghost">↻ 刷新配件 (30 金币)</button>
+              <button id="btn-start-wave" class="btn btn-primary">▶ 下一波</button>
+            </div>
+          </div>
+
+          <!-- 槽位选择 -->
+          <div id="slot-picker" class="slot-picker hidden">
+            <h3>放置到哪个塔位？</h3>
+            <div class="slots-row" id="slots-row"></div>
+            <button id="btn-cancel-pick" class="btn btn-ghost" style="margin-top:16px">取消</button>
+          </div>
+
+          <!-- 看广告 -->
+          <div id="ad-modal" class="ad-modal hidden">
+            <div class="ad-frame">
+              <div class="ad-text">AD · 模拟广告位</div>
+            </div>
+            <div class="ad-timer" id="ad-timer">5</div>
+            <div class="ad-note">观看完整广告可获得 100 金币（演示版模拟广告，实际无广告 SDK）</div>
+            <button id="btn-ad-cancel" class="btn btn-ghost ad-skip">取消</button>
+          </div>
+
+          <!-- 关卡结果 -->
+          <div id="result-overlay" class="result-overlay hidden">
+            <h2 id="result-title">关卡结束</h2>
+            <p class="result-sub" id="result-sub">继续努力</p>
+            <div class="result-stats">
+              <div class="r-stat"><div class="r-label">波次</div><div class="r-value" id="result-wave">0/0</div></div>
+              <div class="r-stat"><div class="r-label">金币</div><div class="r-value" id="result-coin">0</div></div>
+              <div class="r-stat"><div class="r-label">分数</div><div class="r-value" id="result-score">0</div></div>
+              <div class="r-stat"><div class="r-label">血量</div><div class="r-value" id="result-hp">0</div></div>
+            </div>
+            <div class="name-row" id="name-row">
+              <input id="name-input" maxlength="12" placeholder="输入昵称上榜" />
+              <button id="submit-score" class="btn btn-primary">提交成绩</button>
+            </div>
+            <div class="rank-info hidden" id="rank-info"></div>
+            <div class="result-actions">
+              <button id="btn-replay" class="btn btn-ghost">🔄 重玩本关</button>
+              <button id="btn-next-stage" class="btn btn-primary">▶ 下一关</button>
+              <button id="btn-back-menu" class="btn btn-ghost">⌂ 主页</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部动作栏 -->
+        <div class="action-bar">
+          <button id="btn-watch-ad" class="action-btn">
+            <span class="icon">📺</span> 看广告 +100
+            <span class="cooldown" id="ad-cooldown"></span>
+          </button>
+          <button id="btn-refresh-parts" class="action-btn">
+            <span class="icon">↻</span> 刷新配件
+            <span class="badge">30</span>
+          </button>
+          <button id="btn-restart-stage" class="action-btn">
+            <span class="icon">⟲</span> 重新开始
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="sprites.js"></script>
+  <script src="parts.js"></script>
+  <script src="waves.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,11 @@
+{
+  "name": "Stellar Bastion · 星轨要塞",
+  "short_name": "StellarBastion",
+  "description": "3-stage tower defense. 8 HP, slot-based parts with rarity rolls, global leaderboard.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0a0a1a",
+  "theme_color": "#0a0a1a",
+  "icons": []
+}
